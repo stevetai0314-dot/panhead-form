@@ -43,15 +43,20 @@ function testGetDropdowns() {
 function submitForm(fd) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Data');
+  const inOut = fd.docType === '2.盤頭領料上機' ? '出庫' : '入庫';
+  const weight = fd.docType === '2.盤頭領料上機'
+    ? -(Math.abs(parseFloat(fd.weight) || 0))
+    : (parseFloat(fd.weight) || 0);
   sheet.appendRow([
     new Date(),
     fd.dept,
     fd.docType,
+    inOut,
     fd.worker,
     fd.yarn,
     fd.warpCount || '',
     fd.bobbinNo,
-    fd.weight,
+    weight,
     fd.length   || '',
     fd.lot      || '',
     fd.machine  || '',
