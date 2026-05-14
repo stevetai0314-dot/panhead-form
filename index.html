@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>盤頭生產紀錄</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      padding: 12px 12px 100px;
+      min-height: 100vh;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 17px;
+      color: #1a1a1a;
+      line-height: 1.3;
+    }
+
+    #lang-btn {
+      flex-shrink: 0;
+      margin-left: 12px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      background: #fff;
+      border: 1.5px solid #1a73e8;
+      color: #1a73e8;
+      border-radius: 20px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      font-size: 16px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a1a;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #1a73e8;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .hidden { display: none !important; }
+
+    .submit-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px 16px;
+      background: #fff;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+    }
+
+    #submit-btn {
+      width: 100%;
+      padding: 15px;
+      font-size: 17px;
+      font-weight: bold;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    #submit-btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #success-container {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .success-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    #success-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1e8e3e;
+      margin-bottom: 24px;
+    }
+
+    #reset-btn {
+      padding: 14px 32px;
+      font-size: 16px;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #error-msg {
+      color: #d32f2f;
+      font-size: 13px;
+      margin-top: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 表單區 -->
+  <div id="form-container">
+    <div class="top-bar">
+      <h1 id="page-title">盤頭生產紀錄</h1>
+      <button id="lang-btn" onclick="toggleLang()">Tiếng Việt</button>
+    </div>
+
+    <form id="main-form" onsubmit="handleSubmit(event)">
+      <div class="card">
+        <!-- 課別 -->
+        <div class="field">
+          <label id="lbl-dept" for="dept">課別 *</label>
+          <select id="dept" name="dept" required>
+            <option value="" id="opt-placeholder-dept">請選擇</option>
+            <option value="織一" id="opt-dept-1">織一</option>
+            <option value="織二" id="opt-dept-2">織二</option>
+          </select>
+        </div>
+
+        <!-- 單據別 -->
+        <div class="field">
+          <label id="lbl-docType" for="docType">單據別 *</label>
+          <select id="docType" name="docType" required onchange="onDocTypeChange()">
+            <option value="" id="opt-placeholder-doc">請選擇</option>
+            <option value="1.整經盤頭生產" id="opt-doc-1">1. 整經盤頭生產</option>
+            <option value="2.盤頭領料上機" id="opt-doc-2">2. 盤頭領料上機</option>
+            <option value="3.機上盤頭退料" id="opt-doc-3">3. 機上盤頭退料</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 動態欄位區 -->
+      <div id="dynamic-fields" class="hidden">
+        <div class="card">
+          <!-- 生產人員 -->
+          <div class="field">
+            <label id="lbl-worker" for="worker">生產人員 *</label>
+            <input type="text" id="worker" name="worker" list="worker-list" required autocomplete="off">
+            <datalist id="worker-list"></datalist>
+          </div>
+
+          <!-- 紗種 -->
+          <div class="field">
+            <label id="lbl-yarn" for="yarn">紗種 *</label>
+            <input type="text" id="yarn" name="yarn" list="yarn-list" required autocomplete="off">
+            <datalist id="yarn-list"></datalist>
+          </div>
+
+          <!-- 整經條數（單1、單2） -->
+          <div class="field hidden" id="row-warpCount">
+            <label id="lbl-warpCount" for="warpCount">整經條數 *</label>
+            <input type="number" id="warpCount" name="warpCount" min="1" step="1">
+          </div>
+
+          <!-- 盤頭號碼（全部） -->
+          <div class="field">
+            <label id="lbl-bobbinNo" for="bobbinNo">盤頭號碼 *</label>
+            <input type="text" id="bobbinNo" name="bobbinNo" placeholder="EX: B273" required autocomplete="off">
+          </div>
+
+          <!-- 重量（全部） -->
+          <div class="field">
+            <label id="lbl-weight" for="weight">重量 KG *</label>
+            <input type="number" id="weight" name="weight" min="0" step="0.01" required>
+          </div>
+
+          <!-- 長度（僅單1） -->
+          <div class="field hidden" id="row-length">
+            <label id="lbl-length" for="length">長度 M *</label>
+            <input type="number" id="length" name="length" min="0" step="0.1">
+          </div>
+
+          <!-- 批號（僅單1） -->
+          <div class="field hidden" id="row-lot">
+            <label id="lbl-lot" for="lot">批號 *</label>
+            <input type="text" id="lot" name="lot" autocomplete="off">
+          </div>
+
+          <!-- 機台號碼（僅單2） -->
+          <div class="field hidden" id="row-machine">
+            <label id="lbl-machine" for="machine">機台號碼/眼位</label>
+            <input type="text" id="machine" name="machine" placeholder="EX: 7P" autocomplete="off">
+          </div>
+
+          <!-- 刻度（僅單3） -->
+          <div class="field hidden" id="row-scale">
+            <label id="lbl-scale" for="scale">刻度 cm *</label>
+            <input type="number" id="scale" name="scale" min="0" step="0.1">
+          </div>
+        </div>
+      </div>
+
+      <div id="error-msg" class="hidden"></div>
+
+      <div class="submit-bar">
+        <button type="submit" id="submit-btn">送出</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 成功畫面 -->
+  <div id="success-container" class="hidden">
+    <div class="success-icon">✅</div>
+    <div id="success-title">送出成功</div>
+    <button id="reset-btn" onclick="resetForm()">再填一筆</button>
+  </div>
+
+  <script>
+    // ★ 部署 GAS 後，將 Web App URL 填入此處
+    var GAS_URL = 'YOUR_GAS_URL_HERE';
+
+    // === 雙語設定 ===
+    var currentLang = 'zh';
+
+    var LANG = {
+      zh: {
+        pageTitle:           '盤頭生產紀錄',
+        langBtn:             'Tiếng Việt',
+        lblDept:             '課別 *',
+        optPlaceholderDept:  '請選擇',
+        optDept1:            '織一',
+        optDept2:            '織二',
+        lblDocType:          '單據別 *',
+        optPlaceholderDoc:   '請選擇',
+        optDoc1:             '1. 整經盤頭生產',
+        optDoc2:             '2. 盤頭領料上機',
+        optDoc3:             '3. 機上盤頭退料',
+        lblWorker:           '生產人員 *',
+        lblYarn:             '紗種 *',
+        lblWarpCount:        '整經條數 *',
+        lblBobbinNo:         '盤頭號碼 *',
+        lblWeight:           '重量 KG *',
+        lblLength:           '長度 M *',
+        lblLot:              '批號 *',
+        lblMachine:          '機台號碼/眼位',
+        lblScale:            '刻度 cm *',
+        submitBtn:           '送出',
+        submitting:          '送出中...',
+        successTitle:        '送出成功',
+        resetBtn:            '再填一筆',
+        errorGeneral:        '發生錯誤，請重試。\n錯誤：'
+      },
+      vn: {
+        pageTitle:           'Biểu ghi chép đầu suốt',
+        langBtn:             '中文',
+        lblDept:             'Xưởng *',
+        optPlaceholderDept:  'Chọn xưởng',
+        optDept1:            'Xưởng 1',
+        optDept2:            'Xưởng 2',
+        lblDocType:          'Loại biểu *',
+        optPlaceholderDoc:   'Chọn loại biểu',
+        optDoc1:             '1. Biểu sản xuất',
+        optDoc2:             '2. Biểu lãnh trục',
+        optDoc3:             '3. Biểu trả trục',
+        lblWorker:           'Nhân viên *',
+        lblYarn:             'Loại chỉ *',
+        lblWarpCount:        'Số sợi *',
+        lblBobbinNo:         'Mã số đầu suốt *',
+        lblWeight:           'Trọng lượng KG *',
+        lblLength:           'Chiều dài M *',
+        lblLot:              'Số lot chỉ *',
+        lblMachine:          'Số máy / mắt',
+        lblScale:            'Độ khắc sâu cm *',
+        submitBtn:           'Gửi',
+        submitting:          'Đang gửi...',
+        successTitle:        'Gửi thành công',
+        resetBtn:            'Điền tiếp',
+        errorGeneral:        'Có lỗi xảy ra, vui lòng thử lại.\nLỗi: '
+      }
+    };
+
+    var TEXT_MAP = [
+      ['page-title',           'pageTitle'],
+      ['lang-btn',             'langBtn'],
+      ['lbl-dept',             'lblDept'],
+      ['opt-placeholder-dept', 'optPlaceholderDept'],
+      ['opt-dept-1',           'optDept1'],
+      ['opt-dept-2',           'optDept2'],
+      ['lbl-docType',          'lblDocType'],
+      ['opt-placeholder-doc',  'optPlaceholderDoc'],
+      ['opt-doc-1',            'optDoc1'],
+      ['opt-doc-2',            'optDoc2'],
+      ['opt-doc-3',            'optDoc3'],
+      ['lbl-worker',           'lblWorker'],
+      ['lbl-yarn',             'lblYarn'],
+      ['lbl-warpCount',        'lblWarpCount'],
+      ['lbl-bobbinNo',         'lblBobbinNo'],
+      ['lbl-weight',           'lblWeight'],
+      ['lbl-length',           'lblLength'],
+      ['lbl-lot',              'lblLot'],
+      ['lbl-machine',          'lblMachine'],
+      ['lbl-scale',            'lblScale'],
+      ['submit-btn',           'submitBtn'],
+      ['success-title',        'successTitle'],
+      ['reset-btn',            'resetBtn']
+    ];
+
+    function applyLang(lang) {
+      var strings = LANG[lang];
+      TEXT_MAP.forEach(function(pair) {
+        var el = document.getElementById(pair[0]);
+        if (el) el.textContent = strings[pair[1]];
+      });
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'zh' ? 'vn' : 'zh';
+      applyLang(currentLang);
+    }
+
+    // === 下拉選單 + 動態欄位 ===
+    var dropdownData = { warping: [], weaving: [], yarn: [] };
+
+    var FIELD_CONFIG = {
+      '1.整經盤頭生產': {
+        workerList: 'warping',
+        show: ['row-warpCount', 'row-length', 'row-lot'],
+        hide: ['row-machine', 'row-scale'],
+        required: { warpCount: true, length: true, lot: true, machine: false, scale: false }
+      },
+      '2.盤頭領料上機': {
+        workerList: 'weaving',
+        show: ['row-warpCount', 'row-machine'],
+        hide: ['row-length', 'row-lot', 'row-scale'],
+        required: { warpCount: true, length: false, lot: false, machine: false, scale: false }
+      },
+      '3.機上盤頭退料': {
+        workerList: 'weaving',
+        show: ['row-scale'],
+        hide: ['row-warpCount', 'row-length', 'row-lot', 'row-machine'],
+        required: { warpCount: false, length: false, lot: false, machine: false, scale: true }
+      }
+    };
+
+    function fillDatalist(listId, items) {
+      var list = document.getElementById(listId);
+      list.innerHTML = '';
+      items.forEach(function(item) {
+        var opt = document.createElement('option');
+        opt.value = item;
+        list.appendChild(opt);
+      });
+    }
+
+    function onDropdownsLoaded(data) {
+      dropdownData = data;
+      fillDatalist('yarn-list', data.yarn);
+    }
+
+    function onDocTypeChange() {
+      var docType = document.getElementById('docType').value;
+      var config = FIELD_CONFIG[docType];
+
+      if (!config) {
+        document.getElementById('dynamic-fields').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('dynamic-fields').classList.remove('hidden');
+      document.getElementById('worker').value = '';
+
+      fillDatalist('worker-list', dropdownData[config.workerList]);
+
+      config.show.forEach(function(id) {
+        document.getElementById(id).classList.remove('hidden');
+      });
+      config.hide.forEach(function(id) {
+        document.getElementById(id).classList.add('hidden');
+      });
+
+      Object.keys(config.required).forEach(function(name) {
+        var el = document.getElementById(name);
+        if (el) el.required = config.required[name];
+      });
+    }
+
+    window.onload = function() {
+      fetch(GAS_URL + '?action=dropdowns')
+        .then(function(r) { return r.json(); })
+        .then(onDropdownsLoaded)
+        .catch(function(err) { console.error('getDropdowns failed:', err); });
+    };
+
+    // === 表單送出 ===
+    function handleSubmit(e) {
+      e.preventDefault();
+
+      var errorEl = document.getElementById('error-msg');
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+
+      var btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = LANG[currentLang].submitting;
+
+      var formData = {
+        dept:      document.getElementById('dept').value,
+        docType:   document.getElementById('docType').value,
+        worker:    document.getElementById('worker').value.trim(),
+        yarn:      document.getElementById('yarn').value.trim(),
+        warpCount: document.getElementById('warpCount').value,
+        bobbinNo:  document.getElementById('bobbinNo').value.trim(),
+        weight:    document.getElementById('weight').value,
+        length:    document.getElementById('length').value,
+        lot:       document.getElementById('lot').value.trim(),
+        machine:   document.getElementById('machine').value.trim(),
+        scale:     document.getElementById('scale').value
+      };
+
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        if (result.success) {
+          onSubmitSuccess();
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      })
+      .catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = LANG[currentLang].submitBtn;
+        errorEl.textContent = LANG[currentLang].errorGeneral + err.message;
+        errorEl.classList.remove('hidden');
+      });
+    }
+
+    function onSubmitSuccess() {
+      document.getElementById('form-container').classList.add('hidden');
+      var successEl = document.getElementById('success-container');
+      successEl.classList.remove('hidden');
+      document.getElementById('success-title').textContent = LANG[currentLang].successTitle;
+      document.getElementById('reset-btn').textContent = LANG[currentLang].resetBtn;
+    }
+
+    function resetForm() {
+      document.getElementById('main-form').reset();
+      document.getElementById('dynamic-fields').classList.add('hidden');
+      document.getElementById('error-msg').classList.add('hidden');
+      document.getElementById('success-container').classList.add('hidden');
+      document.getElementById('form-container').classList.remove('hidden');
+      var btn = document.getElementById('submit-btn');
+      btn.disabled = false;
+      btn.textContent = LANG[currentLang].submitBtn;
+    }
+  </script>
+
+</body>
+</html>
