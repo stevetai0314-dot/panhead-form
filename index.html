@@ -27,9 +27,16 @@
       line-height: 1.3;
     }
 
-    #lang-btn {
+    .top-bar-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
       flex-shrink: 0;
       margin-left: 12px;
+    }
+
+    #lang-btn {
       padding: 6px 14px;
       font-size: 13px;
       font-weight: bold;
@@ -38,6 +45,16 @@
       color: #1a73e8;
       border-radius: 20px;
       cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #queue-badge {
+      font-size: 11px;
+      color: #e65100;
+      background: #fff3e0;
+      border: 1px solid #ffb74d;
+      border-radius: 10px;
+      padding: 2px 8px;
       white-space: nowrap;
     }
 
@@ -119,15 +136,18 @@
       padding: 60px 20px;
     }
 
-    .success-icon {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
+    .success-icon { font-size: 64px; margin-bottom: 16px; }
 
     #success-title {
       font-size: 24px;
       font-weight: bold;
       color: #1e8e3e;
+      margin-bottom: 8px;
+    }
+
+    #success-note {
+      font-size: 13px;
+      color: #e65100;
       margin-bottom: 24px;
     }
 
@@ -151,16 +171,17 @@
 </head>
 <body>
 
-  <!-- 表單區 -->
   <div id="form-container">
     <div class="top-bar">
       <h1 id="page-title">盤頭生產紀錄</h1>
-      <button id="lang-btn" onclick="toggleLang()">Tiếng Việt</button>
+      <div class="top-bar-right">
+        <button id="lang-btn" onclick="toggleLang()">Tiếng Việt</button>
+        <span id="queue-badge" class="hidden">⏳ <span id="queue-count">0</span> <span id="queue-label">筆待補傳</span></span>
+      </div>
     </div>
 
     <form id="main-form" onsubmit="handleSubmit(event)">
       <div class="card">
-        <!-- 課別 -->
         <div class="field">
           <label id="lbl-dept" for="dept">課別 *</label>
           <select id="dept" name="dept" required>
@@ -169,8 +190,6 @@
             <option value="織二" id="opt-dept-2">織二</option>
           </select>
         </div>
-
-        <!-- 單據別 -->
         <div class="field">
           <label id="lbl-docType" for="docType">單據別 *</label>
           <select id="docType" name="docType" required onchange="onDocTypeChange()">
@@ -182,60 +201,42 @@
         </div>
       </div>
 
-      <!-- 動態欄位區 -->
       <div id="dynamic-fields" class="hidden">
         <div class="card">
-          <!-- 生產人員 -->
           <div class="field">
             <label id="lbl-worker" for="worker">生產人員 *</label>
             <input type="text" id="worker" name="worker" list="worker-list" required autocomplete="off">
             <datalist id="worker-list"></datalist>
           </div>
-
-          <!-- 紗種 -->
           <div class="field">
             <label id="lbl-yarn" for="yarn">紗種 *</label>
             <input type="text" id="yarn" name="yarn" list="yarn-list" required autocomplete="off">
             <datalist id="yarn-list"></datalist>
           </div>
-
-          <!-- 整經條數（單1、單2） -->
           <div class="field hidden" id="row-warpCount">
             <label id="lbl-warpCount" for="warpCount">整經條數 *</label>
             <input type="number" id="warpCount" name="warpCount" min="1" step="1">
           </div>
-
-          <!-- 盤頭號碼（全部） -->
           <div class="field">
             <label id="lbl-bobbinNo" for="bobbinNo">盤頭號碼 *</label>
             <input type="text" id="bobbinNo" name="bobbinNo" placeholder="EX: B273" required autocomplete="off">
           </div>
-
-          <!-- 重量（全部） -->
           <div class="field">
             <label id="lbl-weight" for="weight">重量 KG *</label>
             <input type="number" id="weight" name="weight" min="0" step="0.01" required>
           </div>
-
-          <!-- 長度（僅單1） -->
           <div class="field hidden" id="row-length">
             <label id="lbl-length" for="length">長度 M *</label>
             <input type="number" id="length" name="length" min="0" step="0.1">
           </div>
-
-          <!-- 批號（僅單1） -->
           <div class="field hidden" id="row-lot">
             <label id="lbl-lot" for="lot">批號 *</label>
             <input type="text" id="lot" name="lot" autocomplete="off">
           </div>
-
-          <!-- 機台號碼（僅單2） -->
           <div class="field hidden" id="row-machine">
             <label id="lbl-machine" for="machine">機台號碼/眼位</label>
             <input type="text" id="machine" name="machine" placeholder="EX: 7P" autocomplete="off">
           </div>
-
-          <!-- 刻度（僅單3） -->
           <div class="field hidden" id="row-scale">
             <label id="lbl-scale" for="scale">刻度 cm *</label>
             <input type="number" id="scale" name="scale" min="0" step="0.1">
@@ -251,74 +252,128 @@
     </form>
   </div>
 
-  <!-- 成功畫面 -->
   <div id="success-container" class="hidden">
     <div class="success-icon">✅</div>
     <div id="success-title">送出成功</div>
+    <div id="success-note" class="hidden"></div>
     <button id="reset-btn" onclick="resetForm()">再填一筆</button>
   </div>
 
   <script>
-    // ★ 部署 GAS 後，將 Web App URL 填入此處
+    // ★ GAS Web App URL
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbx0EzObYrimkeAnZZn5gXAz0vKsG_1bkMkqudQnKdWqkFYZKp1f_BIDwkrfQe4iXzG3/exec';
+
+    // ★ localStorage 佇列 key
+    var QUEUE_KEY = 'panhead_submit_queue';
+
+    // === 離線佇列 ===
+    function getQueue() {
+      try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; }
+      catch (e) { return []; }
+    }
+
+    function saveQueue(q) {
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+    }
+
+    function enqueue(formData) {
+      var q = getQueue();
+      q.push({ ts: new Date().toISOString(), data: formData });
+      saveQueue(q);
+      updateQueueBadge();
+    }
+
+    function flushQueue() {
+      if (!navigator.onLine) return;
+      var q = getQueue();
+      if (!q.length) return;
+      var item = q.shift();
+      saveQueue(q);
+      updateQueueBadge();
+      fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(item.data) })
+        .then(function () { flushQueue(); })
+        .catch(function () {
+          var q2 = getQueue();
+          q2.unshift(item);
+          saveQueue(q2);
+          updateQueueBadge();
+        });
+    }
+
+    function updateQueueBadge() {
+      var n = getQueue().length;
+      var badge = document.getElementById('queue-badge');
+      if (n > 0) {
+        document.getElementById('queue-count').textContent = n;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    window.addEventListener('online', function () { flushQueue(); });
 
     // === 雙語設定 ===
     var currentLang = 'zh';
 
     var LANG = {
       zh: {
-        pageTitle:           '盤頭生產紀錄',
-        langBtn:             'Tiếng Việt',
-        lblDept:             '課別 *',
-        optPlaceholderDept:  '請選擇',
-        optDept1:            '織一',
-        optDept2:            '織二',
-        lblDocType:          '單據別 *',
-        optPlaceholderDoc:   '請選擇',
-        optDoc1:             '1. 整經盤頭生產',
-        optDoc2:             '2. 盤頭領料上機',
-        optDoc3:             '3. 機上盤頭退料',
-        lblWorker:           '生產人員 *',
-        lblYarn:             '紗種 *',
-        lblWarpCount:        '整經條數 *',
-        lblBobbinNo:         '盤頭號碼 *',
-        lblWeight:           '重量 KG *',
-        lblLength:           '長度 M *',
-        lblLot:              '批號 *',
-        lblMachine:          '機台號碼/眼位',
-        lblScale:            '刻度 cm *',
-        submitBtn:           '送出',
-        submitting:          '送出中...',
-        successTitle:        '送出成功',
-        resetBtn:            '再填一筆',
-        errorGeneral:        '發生錯誤，請重試。\n錯誤：'
+        pageTitle:          '盤頭生產紀錄',
+        langBtn:            'Tiếng Việt',
+        lblDept:            '課別 *',
+        optPlaceholderDept: '請選擇',
+        optDept1:           '織一',
+        optDept2:           '織二',
+        lblDocType:         '單據別 *',
+        optPlaceholderDoc:  '請選擇',
+        optDoc1:            '1. 整經盤頭生產',
+        optDoc2:            '2. 盤頭領料上機',
+        optDoc3:            '3. 機上盤頭退料',
+        lblWorker:          '生產人員 *',
+        lblYarn:            '紗種 *',
+        lblWarpCount:       '整經條數 *',
+        lblBobbinNo:        '盤頭號碼 *',
+        lblWeight:          '重量 KG *',
+        lblLength:          '長度 M *',
+        lblLot:             '批號 *',
+        lblMachine:         '機台號碼/眼位',
+        lblScale:           '刻度 cm *',
+        submitBtn:          '送出',
+        submitting:         '送出中...',
+        successOnline:      '送出成功',
+        successOffline:     '已暫存',
+        successOfflineNote: '無網路，上線後自動補傳',
+        resetBtn:           '再填一筆',
+        queueLabel:         '筆待補傳'
       },
       vn: {
-        pageTitle:           'Biểu ghi chép đầu suốt',
-        langBtn:             '中文',
-        lblDept:             'Xưởng *',
-        optPlaceholderDept:  'Chọn xưởng',
-        optDept1:            'Xưởng 1',
-        optDept2:            'Xưởng 2',
-        lblDocType:          'Loại biểu *',
-        optPlaceholderDoc:   'Chọn loại biểu',
-        optDoc1:             '1. Biểu sản xuất',
-        optDoc2:             '2. Biểu lãnh trục',
-        optDoc3:             '3. Biểu trả trục',
-        lblWorker:           'Nhân viên *',
-        lblYarn:             'Loại chỉ *',
-        lblWarpCount:        'Số sợi *',
-        lblBobbinNo:         'Mã số đầu suốt *',
-        lblWeight:           'Trọng lượng KG *',
-        lblLength:           'Chiều dài M *',
-        lblLot:              'Số lot chỉ *',
-        lblMachine:          'Số máy / mắt',
-        lblScale:            'Độ khắc sâu cm *',
-        submitBtn:           'Gửi',
-        submitting:          'Đang gửi...',
-        successTitle:        'Gửi thành công',
-        resetBtn:            'Điền tiếp',
-        errorGeneral:        'Có lỗi xảy ra, vui lòng thử lại.\nLỗi: '
+        pageTitle:          'Biểu ghi chép đầu suốt',
+        langBtn:            '中文',
+        lblDept:            'Xưởng *',
+        optPlaceholderDept: 'Chọn xưởng',
+        optDept1:           'Xưởng 1',
+        optDept2:           'Xưởng 2',
+        lblDocType:         'Loại biểu *',
+        optPlaceholderDoc:  'Chọn loại biểu',
+        optDoc1:            '1. Biểu sản xuất',
+        optDoc2:            '2. Biểu lãnh trục',
+        optDoc3:            '3. Biểu trả trục',
+        lblWorker:          'Nhân viên *',
+        lblYarn:            'Loại chỉ *',
+        lblWarpCount:       'Số sợi *',
+        lblBobbinNo:        'Mã số đầu suốt *',
+        lblWeight:          'Trọng lượng KG *',
+        lblLength:          'Chiều dài M *',
+        lblLot:             'Số lot chỉ *',
+        lblMachine:         'Số máy / mắt',
+        lblScale:           'Độ khắc sâu cm *',
+        submitBtn:          'Gửi',
+        submitting:         'Đang gửi...',
+        successOnline:      'Gửi thành công',
+        successOffline:     'Đã lưu tạm',
+        successOfflineNote: 'Không có mạng, sẽ tự gửi khi có kết nối',
+        resetBtn:           'Điền tiếp',
+        queueLabel:         'bản chờ gửi'
       }
     };
 
@@ -344,15 +399,15 @@
       ['lbl-machine',          'lblMachine'],
       ['lbl-scale',            'lblScale'],
       ['submit-btn',           'submitBtn'],
-      ['success-title',        'successTitle'],
-      ['reset-btn',            'resetBtn']
+      ['reset-btn',            'resetBtn'],
+      ['queue-label',          'queueLabel']
     ];
 
     function applyLang(lang) {
-      var strings = LANG[lang];
-      TEXT_MAP.forEach(function(pair) {
+      var s = LANG[lang];
+      TEXT_MAP.forEach(function (pair) {
         var el = document.getElementById(pair[0]);
-        if (el) el.textContent = strings[pair[1]];
+        if (el) el.textContent = s[pair[1]];
       });
     }
 
@@ -361,8 +416,56 @@
       applyLang(currentLang);
     }
 
-    // === 下拉選單 + 動態欄位 ===
-    var dropdownData = { warping: [], weaving: [], yarn: [] };
+    // === 下拉資料（本地硬編碼，名單異動時更新此處再 git push）===
+    var dropdownData = {
+      warping: [
+        '01507-Huỳnh Văn Khương黃文康',
+        '02028-Nguyễn Xuân Huynh阮春兄',
+        '02200-Thạch Trường石長',
+        '02214-Trương Quốc Khánh張國慶',
+        '00824-Nguyễn Văn Phụng阮文峰',
+        '01997-Nguyễn Minh Kha阮明軻',
+        '01517-Trương Phi Hổ張飛虎',
+        '02074-Lê Văn Sang黎文瀧',
+        '00890-Lê Minh Tèo黎明小',
+        '02321-Lê Thanh Long黎清隆',
+        '02352-Dương Cao Vĩ楊高偉'
+      ],
+      weaving: [
+        '01914-LÊ MINH TRÍ黎明智',
+        '02252-Nguyễn Duy Phương阮維方',
+        '00317-NGUYỄN VĂN LĨNH阮文领',
+        '01906-TRẦN VĂN THANH陳文清',
+        '02018-Phạm Huỳnh Kỳ范黄旗',
+        '00576-LÊ PHÚ ĐiỀN黎富田',
+        '01953-Võ Phú Yên武富安',
+        '02249-Nguyễn Tiến Đạt阮進達',
+        '00823-PHAN XUÂN TRƯỜNG潘春長',
+        '01094-NGUYỄN MINH KHÔI阮明魁',
+        '01477-NGUYỄN NGỌC LUÔN阮玉倫',
+        '01743-TRẦN CHÍ THÀNH陳志成',
+        '02077-Đinh Văn Vững丁文穩',
+        '00777-DƯƠNG THÁI TRUNG楊蔡中',
+        '02112-Trần Văn Đức陳文德',
+        '01095-NGUYỄN MINH TRUNG阮明中',
+        '00752-CHỀ NÀM SÁNG謝南生',
+        '02195-Vũ Đức Tuấn武德俊',
+        '00334-VÕ VĂN THẮNG武文胜',
+        '02036-Nguyễn Văn Thân阮文申',
+        '00858-NGUYỄN THỊ BÍCH HẠNH阮氏璧幸',
+        '01626-ĐINH VĂN DƯƠNG丁文楊',
+        '02387-Mai Minh Thông梅明通',
+        '02321-Lê Thanh Long黎清隆'
+      ],
+      yarn: [
+        '280D-NK', '280D-TQ', '280D/80D', '280D-OB',
+        '0.22', '0.17', '0.16',
+        '200D-350Z', '200D-DST', '200D-270Z-SR',
+        '300D-990', '300D-170', '170D-270Z',
+        'PET 280D/18F', 'PBT 0.2', 'PBT 0.2-170',
+        '300D/96F-180Z-990', '150D/48F/2-180Z-990', '280D-HS'
+      ]
+    };
 
     var FIELD_CONFIG = {
       '1.整經盤頭生產': {
@@ -388,59 +491,34 @@
     function fillDatalist(listId, items) {
       var list = document.getElementById(listId);
       list.innerHTML = '';
-      items.forEach(function(item) {
+      items.forEach(function (item) {
         var opt = document.createElement('option');
         opt.value = item;
         list.appendChild(opt);
       });
     }
 
-    function onDropdownsLoaded(data) {
-      dropdownData = data;
-      fillDatalist('yarn-list', data.yarn);
-    }
-
     function onDocTypeChange() {
       var docType = document.getElementById('docType').value;
       var config = FIELD_CONFIG[docType];
-
       if (!config) {
         document.getElementById('dynamic-fields').classList.add('hidden');
         return;
       }
-
       document.getElementById('dynamic-fields').classList.remove('hidden');
       document.getElementById('worker').value = '';
-
       fillDatalist('worker-list', dropdownData[config.workerList]);
-
-      config.show.forEach(function(id) {
-        document.getElementById(id).classList.remove('hidden');
-      });
-      config.hide.forEach(function(id) {
-        document.getElementById(id).classList.add('hidden');
-      });
-
-      Object.keys(config.required).forEach(function(name) {
+      config.show.forEach(function (id) { document.getElementById(id).classList.remove('hidden'); });
+      config.hide.forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+      Object.keys(config.required).forEach(function (name) {
         var el = document.getElementById(name);
         if (el) el.required = config.required[name];
       });
     }
 
-    window.onload = function() {
-      fetch(GAS_URL + '?action=dropdowns')
-        .then(function(r) { return r.json(); })
-        .then(onDropdownsLoaded)
-        .catch(function(err) { console.error('getDropdowns failed:', err); });
-    };
-
     // === 表單送出 ===
     function handleSubmit(e) {
       e.preventDefault();
-
-      var errorEl = document.getElementById('error-msg');
-      errorEl.classList.add('hidden');
-      errorEl.textContent = '';
 
       var btn = document.getElementById('submit-btn');
       btn.disabled = true;
@@ -460,32 +538,34 @@
         scale:     document.getElementById('scale').value
       };
 
-      fetch(GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify(formData)
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(result) {
-        if (result.success) {
-          onSubmitSuccess();
-        } else {
-          throw new Error(result.error || 'Unknown error');
-        }
-      })
-      .catch(function(err) {
-        btn.disabled = false;
-        btn.textContent = LANG[currentLang].submitBtn;
-        errorEl.textContent = LANG[currentLang].errorGeneral + err.message;
-        errorEl.classList.remove('hidden');
-      });
+      if (!navigator.onLine) {
+        enqueue(formData);
+        showSuccess(true);
+        return;
+      }
+
+      fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(formData) })
+        .then(function () { showSuccess(false); })
+        .catch(function () {
+          enqueue(formData);
+          showSuccess(true);
+        });
     }
 
-    function onSubmitSuccess() {
+    function showSuccess(offline) {
+      var s = LANG[currentLang];
       document.getElementById('form-container').classList.add('hidden');
-      var successEl = document.getElementById('success-container');
-      successEl.classList.remove('hidden');
-      document.getElementById('success-title').textContent = LANG[currentLang].successTitle;
-      document.getElementById('reset-btn').textContent = LANG[currentLang].resetBtn;
+      var sc = document.getElementById('success-container');
+      sc.classList.remove('hidden');
+      document.getElementById('success-title').textContent = offline ? s.successOffline : s.successOnline;
+      var note = document.getElementById('success-note');
+      if (offline) {
+        note.textContent = s.successOfflineNote;
+        note.classList.remove('hidden');
+      } else {
+        note.classList.add('hidden');
+      }
+      document.getElementById('reset-btn').textContent = s.resetBtn;
     }
 
     function resetForm() {
@@ -498,6 +578,12 @@
       btn.disabled = false;
       btn.textContent = LANG[currentLang].submitBtn;
     }
+
+    window.onload = function () {
+      fillDatalist('yarn-list', dropdownData.yarn);
+      updateQueueBadge();
+      if (navigator.onLine) flushQueue();
+    };
   </script>
 
 </body>
