@@ -79,6 +79,7 @@
 
     input[type="text"],
     input[type="number"],
+    input[type="date"],
     select {
       width: 100%;
       padding: 11px 12px;
@@ -202,33 +203,35 @@
             <option value="1.整經盤頭生產" id="opt-doc-1">1. 整經盤頭生產</option>
             <option value="2.盤頭領料上機" id="opt-doc-2">2. 盤頭領料上機</option>
             <option value="3.機上盤頭退料" id="opt-doc-3">3. 機上盤頭退料</option>
+            <option value="4.進料記錄" id="opt-doc-4">4. 進料記錄</option>
           </select>
         </div>
       </div>
 
       <div id="dynamic-fields" class="hidden">
         <div class="card">
-          <div class="field">
+          <!-- 生產紀錄欄位 -->
+          <div class="field" id="row-worker">
             <label id="lbl-worker" for="worker">生產人員 *</label>
-            <input type="text" id="worker" name="worker" list="worker-list" required autocomplete="off">
+            <input type="text" id="worker" name="worker" list="worker-list" autocomplete="off">
             <datalist id="worker-list"></datalist>
           </div>
-          <div class="field">
+          <div class="field" id="row-yarn">
             <label id="lbl-yarn" for="yarn">紗種 *</label>
-            <input type="text" id="yarn" name="yarn" list="yarn-list" required autocomplete="off">
+            <input type="text" id="yarn" name="yarn" list="yarn-list" autocomplete="off">
             <datalist id="yarn-list"></datalist>
           </div>
           <div class="field hidden" id="row-warpCount">
             <label id="lbl-warpCount" for="warpCount">整經條數 *</label>
             <input type="number" id="warpCount" name="warpCount" min="1" step="1">
           </div>
-          <div class="field">
+          <div class="field" id="row-bobbinNo">
             <label id="lbl-bobbinNo" for="bobbinNo">盤頭號碼 *</label>
-            <input type="text" id="bobbinNo" name="bobbinNo" placeholder="EX: B273" required autocomplete="off">
+            <input type="text" id="bobbinNo" name="bobbinNo" placeholder="EX: B273" autocomplete="off">
           </div>
-          <div class="field">
+          <div class="field" id="row-weight">
             <label id="lbl-weight" for="weight">重量 KG *</label>
-            <input type="number" id="weight" name="weight" min="0" step="0.01" required>
+            <input type="number" id="weight" name="weight" min="0" step="0.01">
           </div>
           <div class="field hidden" id="row-length">
             <label id="lbl-length" for="length">長度 M *</label>
@@ -245,6 +248,32 @@
           <div class="field hidden" id="row-scale">
             <label id="lbl-scale" for="scale">刻度 cm *</label>
             <input type="number" id="scale" name="scale" min="0" step="0.1">
+          </div>
+
+          <!-- 進料記錄欄位 -->
+          <div class="field hidden" id="row-spec">
+            <label for="spec">規格 *</label>
+            <input type="text" id="spec" name="spec" list="yarn-list" autocomplete="off" placeholder="選擇或輸入紗種規格">
+          </div>
+          <div class="field hidden" id="row-lotColor">
+            <label for="lotColor">批號顏色 *</label>
+            <input type="text" id="lotColor" name="lotColor" autocomplete="off">
+          </div>
+          <div class="field hidden" id="row-boxes">
+            <label for="boxes">箱數 *</label>
+            <input type="number" id="boxes" name="boxes" min="0" step="1">
+          </div>
+          <div class="field hidden" id="row-arrivalDate">
+            <label for="arrivalDate">進廠日期 *</label>
+            <input type="date" id="arrivalDate" name="arrivalDate">
+          </div>
+          <div class="field hidden" id="row-location">
+            <label for="location">位置 *</label>
+            <select id="location" name="location">
+              <option value="" disabled selected>請選擇</option>
+              <option value="非盤頭">非盤頭</option>
+              <option value="盤頭上">盤頭上</option>
+            </select>
           </div>
         </div>
       </div>
@@ -268,7 +297,6 @@
     // ★ GAS Web App URL
     var GAS_URL = 'https://script.google.com/macros/s/AKfycbx0EzObYrimkeAnZZn5gXAz0vKsG_1bkMkqudQnKdWqkFYZKp1f_BIDwkrfQe4iXzG3/exec';
 
-    // ★ localStorage 佇列 key
     var QUEUE_KEY = 'panhead_submit_queue';
 
     // === 離線佇列 ===
@@ -334,6 +362,7 @@
         optDoc1:            '1. 整經盤頭生產',
         optDoc2:            '2. 盤頭領料上機',
         optDoc3:            '3. 機上盤頭退料',
+        optDoc4:            '4. 進料記錄',
         lblWorker:          '生產人員 *',
         lblYarn:            '紗種 *',
         lblWarpCount:       '整經條數 *',
@@ -363,6 +392,7 @@
         optDoc1:            '1. Biểu sản xuất',
         optDoc2:            '2. Biểu lãnh trục',
         optDoc3:            '3. Biểu trả trục',
+        optDoc4:            '4. Nhập liệu',
         lblWorker:          'Nhân viên *',
         lblYarn:            'Loại chỉ *',
         lblWarpCount:       'Số sợi *',
@@ -394,6 +424,7 @@
       ['opt-doc-1',            'optDoc1'],
       ['opt-doc-2',            'optDoc2'],
       ['opt-doc-3',            'optDoc3'],
+      ['opt-doc-4',            'optDoc4'],
       ['lbl-worker',           'lblWorker'],
       ['lbl-yarn',             'lblYarn'],
       ['lbl-warpCount',        'lblWarpCount'],
@@ -421,7 +452,7 @@
       applyLang(currentLang);
     }
 
-    // === 下拉資料（本地硬編碼，名單異動時更新此處再 git push）===
+    // === 下拉資料 ===
     var dropdownData = {
       warping: [
         '01507-Huỳnh Văn Khương黃文康',
@@ -475,21 +506,27 @@
     var FIELD_CONFIG = {
       '1.整經盤頭生產': {
         workerList: 'warping',
-        show: ['row-warpCount', 'row-length', 'row-lot'],
-        hide: ['row-machine', 'row-scale'],
-        required: { warpCount: true, length: true, lot: true, machine: false, scale: false }
+        show: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-weight', 'row-warpCount', 'row-length', 'row-lot'],
+        hide: ['row-machine', 'row-scale', 'row-spec', 'row-lotColor', 'row-boxes', 'row-arrivalDate', 'row-location'],
+        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: true, length: true, lot: true, machine: false, scale: false, spec: false, lotColor: false, boxes: false, arrivalDate: false, location: false }
       },
       '2.盤頭領料上機': {
         workerList: 'weaving',
-        show: ['row-warpCount', 'row-machine'],
-        hide: ['row-length', 'row-lot', 'row-scale'],
-        required: { warpCount: true, length: false, lot: false, machine: false, scale: false }
+        show: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-weight', 'row-warpCount', 'row-machine'],
+        hide: ['row-length', 'row-lot', 'row-scale', 'row-spec', 'row-lotColor', 'row-boxes', 'row-arrivalDate', 'row-location'],
+        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: true, length: false, lot: false, machine: false, scale: false, spec: false, lotColor: false, boxes: false, arrivalDate: false, location: false }
       },
       '3.機上盤頭退料': {
         workerList: 'weaving',
-        show: ['row-scale'],
-        hide: ['row-warpCount', 'row-length', 'row-lot', 'row-machine'],
-        required: { warpCount: false, length: false, lot: false, machine: false, scale: true }
+        show: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-weight', 'row-scale'],
+        hide: ['row-warpCount', 'row-length', 'row-lot', 'row-machine', 'row-spec', 'row-lotColor', 'row-boxes', 'row-arrivalDate', 'row-location'],
+        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: false, length: false, lot: false, machine: false, scale: true, spec: false, lotColor: false, boxes: false, arrivalDate: false, location: false }
+      },
+      '4.進料記錄': {
+        workerList: null,
+        show: ['row-spec', 'row-lotColor', 'row-boxes', 'row-weight', 'row-arrivalDate', 'row-location'],
+        hide: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-warpCount', 'row-length', 'row-lot', 'row-machine', 'row-scale'],
+        required: { worker: false, yarn: false, bobbinNo: false, weight: true, warpCount: false, length: false, lot: false, machine: false, scale: false, spec: true, lotColor: true, boxes: true, arrivalDate: true, location: true }
       }
     };
 
@@ -511,10 +548,15 @@
         return;
       }
       document.getElementById('dynamic-fields').classList.remove('hidden');
-      document.getElementById('worker').value = '';
-      fillDatalist('worker-list', dropdownData[config.workerList]);
+
+      if (config.workerList) {
+        document.getElementById('worker').value = '';
+        fillDatalist('worker-list', dropdownData[config.workerList]);
+      }
+
       config.show.forEach(function (id) { document.getElementById(id).classList.remove('hidden'); });
       config.hide.forEach(function (id) { document.getElementById(id).classList.add('hidden'); });
+
       Object.keys(config.required).forEach(function (name) {
         var el = document.getElementById(name);
         if (el) el.required = config.required[name];
@@ -529,9 +571,23 @@
       btn.disabled = true;
       btn.textContent = LANG[currentLang].submitting;
 
-      var formData = {
+      var docType = document.getElementById('docType').value;
+      var isIntake = docType === '4.進料記錄';
+
+      var formData = isIntake ? {
+        formType:    'intake',
+        dept:        document.getElementById('dept').value,
+        docType:     docType,
+        spec:        document.getElementById('spec').value.trim(),
+        lotColor:    document.getElementById('lotColor').value.trim(),
+        boxes:       document.getElementById('boxes').value,
+        weight:      document.getElementById('weight').value,
+        arrivalDate: document.getElementById('arrivalDate').value,
+        location:    document.getElementById('location').value
+      } : {
+        formType:  'production',
         dept:      document.getElementById('dept').value,
-        docType:   document.getElementById('docType').value,
+        docType:   docType,
         worker:    document.getElementById('worker').value.trim(),
         yarn:      document.getElementById('yarn').value.trim(),
         warpCount: document.getElementById('warpCount').value,
@@ -575,6 +631,7 @@
 
     function resetForm() {
       document.getElementById('main-form').reset();
+      document.getElementById('arrivalDate').value = getTodayDate();
       document.getElementById('dynamic-fields').classList.add('hidden');
       document.getElementById('error-msg').classList.add('hidden');
       document.getElementById('success-container').classList.add('hidden');
@@ -584,10 +641,15 @@
       btn.textContent = LANG[currentLang].submitBtn;
     }
 
+    function getTodayDate() {
+      return new Date().toISOString().split('T')[0];
+    }
+
     window.onload = function () {
       fillDatalist('yarn-list', dropdownData.yarn);
       updateQueueBadge();
       if (navigator.onLine) flushQueue();
+      document.getElementById('arrivalDate').value = getTodayDate();
     };
   </script>
 
