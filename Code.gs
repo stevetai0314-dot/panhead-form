@@ -10,7 +10,7 @@ function doGet(e) {
 function doPost(e) {
   try {
     var fd = JSON.parse(e.postData.contents);
-    var result = submitForm(fd);
+    var result = fd.formType === 'intake' ? submitIntake(fd) : submitForm(fd);
     return ContentService.createTextOutput(JSON.stringify(result))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -61,6 +61,25 @@ function submitForm(fd) {
     fd.lot      || '',
     fd.machine  || '',
     fd.scale    || ''
+  ]);
+  return { success: true };
+}
+
+function submitIntake(fd) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('進料');
+  if (!sheet) {
+    sheet = ss.insertSheet('進料');
+    sheet.appendRow(['時間戳記', '規格', '批號顏色', '箱數', '重量KG', '進廠日期', '位置']);
+  }
+  sheet.appendRow([
+    new Date(),
+    fd.spec,
+    fd.lotColor,
+    Number(fd.boxes),
+    Number(fd.weight),
+    fd.arrivalDate,
+    fd.location
   ]);
   return { success: true };
 }
