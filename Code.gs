@@ -19,6 +19,11 @@ function doPost(e) {
   }
 }
 
+function parseDecimal(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  return parseFloat(String(val).replace(',', '.')) || 0;
+}
+
 function getDropdowns() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const config = ss.getSheetByName('Config');
@@ -45,8 +50,8 @@ function submitForm(fd) {
   const sheet = ss.getSheetByName('Data');
   const inOut = fd.docType === '2.盤頭領料上機' ? '出庫' : '入庫';
   const weight = fd.docType === '2.盤頭領料上機'
-    ? -(Math.abs(parseFloat(fd.weight) || 0))
-    : (parseFloat(fd.weight) || 0);
+    ? -(Math.abs(parseDecimal(fd.weight)))
+    : parseDecimal(fd.weight);
   sheet.appendRow([
     new Date(),
     fd.dept,
@@ -77,8 +82,8 @@ function submitIntake(fd) {
     fd.spec,
     fd.intakeLot,
     fd.color,
-    Number(fd.boxes),
-    Number(fd.weight),
+    parseDecimal(fd.boxes),
+    parseDecimal(fd.weight),
     fd.arrivalDate,
     fd.location
   ]);
