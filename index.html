@@ -255,9 +255,13 @@
             <label for="spec">規格 *</label>
             <input type="text" id="spec" name="spec" list="yarn-list" autocomplete="off" placeholder="選擇或輸入紗種規格">
           </div>
-          <div class="field hidden" id="row-lotColor">
-            <label for="lotColor">批號顏色 *</label>
-            <input type="text" id="lotColor" name="lotColor" autocomplete="off">
+          <div class="field hidden" id="row-intakeLot">
+            <label for="intakeLot">批號 *</label>
+            <input type="text" id="intakeLot" name="intakeLot" autocomplete="off">
+          </div>
+          <div class="field hidden" id="row-color">
+            <label for="color">顏色 *</label>
+            <input type="text" id="color" name="color" autocomplete="off">
           </div>
           <div class="field hidden" id="row-boxes">
             <label for="boxes">箱數 *</label>
@@ -507,26 +511,26 @@
       '1.整經盤頭生產': {
         workerList: 'warping',
         show: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-weight', 'row-warpCount', 'row-length', 'row-lot'],
-        hide: ['row-machine', 'row-scale', 'row-spec', 'row-lotColor', 'row-boxes', 'row-arrivalDate', 'row-location'],
-        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: true, length: true, lot: true, machine: false, scale: false, spec: false, lotColor: false, boxes: false, arrivalDate: false, location: false }
+        hide: ['row-machine', 'row-scale', 'row-spec', 'row-intakeLot', 'row-color', 'row-boxes', 'row-arrivalDate', 'row-location'],
+        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: true, length: true, lot: true, machine: false, scale: false, spec: false, intakeLot: false, color: false, boxes: false, arrivalDate: false, location: false }
       },
       '2.盤頭領料上機': {
         workerList: 'weaving',
         show: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-weight', 'row-warpCount', 'row-machine'],
-        hide: ['row-length', 'row-lot', 'row-scale', 'row-spec', 'row-lotColor', 'row-boxes', 'row-arrivalDate', 'row-location'],
-        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: true, length: false, lot: false, machine: false, scale: false, spec: false, lotColor: false, boxes: false, arrivalDate: false, location: false }
+        hide: ['row-length', 'row-lot', 'row-scale', 'row-spec', 'row-intakeLot', 'row-color', 'row-boxes', 'row-arrivalDate', 'row-location'],
+        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: true, length: false, lot: false, machine: false, scale: false, spec: false, intakeLot: false, color: false, boxes: false, arrivalDate: false, location: false }
       },
       '3.機上盤頭退料': {
         workerList: 'weaving',
         show: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-weight', 'row-scale'],
-        hide: ['row-warpCount', 'row-length', 'row-lot', 'row-machine', 'row-spec', 'row-lotColor', 'row-boxes', 'row-arrivalDate', 'row-location'],
-        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: false, length: false, lot: false, machine: false, scale: true, spec: false, lotColor: false, boxes: false, arrivalDate: false, location: false }
+        hide: ['row-warpCount', 'row-length', 'row-lot', 'row-machine', 'row-spec', 'row-intakeLot', 'row-color', 'row-boxes', 'row-arrivalDate', 'row-location'],
+        required: { worker: true, yarn: true, bobbinNo: true, weight: true, warpCount: false, length: false, lot: false, machine: false, scale: true, spec: false, intakeLot: false, color: false, boxes: false, arrivalDate: false, location: false }
       },
       '4.進料記錄': {
         workerList: null,
-        show: ['row-spec', 'row-lotColor', 'row-boxes', 'row-weight', 'row-arrivalDate', 'row-location'],
+        show: ['row-spec', 'row-intakeLot', 'row-color', 'row-boxes', 'row-weight', 'row-arrivalDate', 'row-location'],
         hide: ['row-worker', 'row-yarn', 'row-bobbinNo', 'row-warpCount', 'row-length', 'row-lot', 'row-machine', 'row-scale'],
-        required: { worker: false, yarn: false, bobbinNo: false, weight: true, warpCount: false, length: false, lot: false, machine: false, scale: false, spec: true, lotColor: true, boxes: true, arrivalDate: true, location: true }
+        required: { worker: false, yarn: false, bobbinNo: false, weight: true, warpCount: false, length: false, lot: false, machine: false, scale: false, spec: true, intakeLot: true, color: true, boxes: true, arrivalDate: true, location: true }
       }
     };
 
@@ -579,7 +583,8 @@
         dept:        document.getElementById('dept').value,
         docType:     docType,
         spec:        document.getElementById('spec').value.trim(),
-        lotColor:    document.getElementById('lotColor').value.trim(),
+        intakeLot:   document.getElementById('intakeLot').value.trim(),
+        color:       document.getElementById('color').value.trim(),
         boxes:       document.getElementById('boxes').value,
         weight:      document.getElementById('weight').value,
         arrivalDate: document.getElementById('arrivalDate').value,
