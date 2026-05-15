@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>盤頭生產紀錄 - 系統流程圖</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; background: #f0f2f5; margin: 0; }
+    h1 { color: #1a73e8; margin-bottom: 4px; }
+    .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .card h2 { color: #333; margin-top: 0; font-size: 16px; border-left: 4px solid #1a73e8; padding-left: 10px; }
+    .notes { background: #e8f0fe; border-radius: 8px; padding: 16px; }
+    .notes h3 { color: #1a73e8; margin-top: 0; font-size: 14px; }
+    .notes ul { margin: 0; padding-left: 20px; font-size: 13px; color: #333; }
+    .notes li { margin-bottom: 6px; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-right: 4px; }
+    .tag-blue { background: #e8f0fe; color: #1a73e8; }
+    .tag-green { background: #e6f4ea; color: #1e8e3e; }
+    .tag-orange { background: #fce8b2; color: #e65100; }
+  </style>
+</head>
+<body>
+  <h1>盤頭生產紀錄 系統流程圖</h1>
+  <p class="subtitle">panhead-form · GitHub Pages + Google Apps Script + Google Sheets</p>
+
+  <div class="card">
+    <h2>表單主流程</h2>
+    <div class="mermaid">
+graph TD
+    A([開啟頁面]) --> B[選擇課別\n織一 / 織二]
+    B --> C[選擇單據別]
+    C --> D{單據別}
+
+    D --> E[1. 整經盤頭生產]
+    D --> F[2. 盤頭領料上機]
+    D --> G[3. 機上盤頭退料]
+    D --> H[4. 進料記錄]
+
+    E --> E1[整經人員 / 紗種\n條數 / 號碼 / 重量 / 長度 / 批號]
+    F --> F1[織布人員 / 紗種\n條數 / 號碼 / 重量 / 機台]
+    G --> G1[織布人員 / 紗種\n號碼 / 重量 / 刻度]
+    H --> H1[規格 / 批號 / 顏色\n箱數 / 重量 / 進廠日期 / 位置]
+
+    E1 & F1 & G1 & H1 --> I[點送出]
+    I --> J{網路狀態}
+    J -- 有網路 --> K[POST to GAS]
+    J -- 無網路 --> L[存入 localStorage 佇列]
+    L --> M([上線後自動補傳])
+
+    K --> N{formType?}
+    N -- production --> O[(Data 工作表\n入庫 / 出庫)]
+    N -- intake --> P[(進料 工作表)]
+
+    style E fill:#e8f0fe,stroke:#1a73e8
+    style F fill:#e8f0fe,stroke:#1a73e8
+    style G fill:#e8f0fe,stroke:#1a73e8
+    style H fill:#fce8b2,stroke:#e65100
+    style O fill:#e6f4ea,stroke:#1e8e3e
+    style P fill:#fce8b2,stroke:#e65100
+    style L fill:#fff3e0,stroke:#ffb74d
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>離線佇列流程</h2>
+    <div class="mermaid">
+graph LR
+    A[送出表單] --> B{navigator.onLine?}
+    B -- true --> C[直接 fetch GAS]
+    B -- false --> D[enqueue to localStorage]
+    C -- 成功 --> E([完成])
+    C -- 失敗 --> D
+    D --> F([顯示 badge 待補傳筆數])
+    G([window.online 事件]) --> H[flushQueue]
+    H --> I{佇列有資料?}
+    I -- 是 --> J[shift 第一筆]
+    J --> K[fetch GAS]
+    K -- 成功 --> I
+    K -- 失敗 --> L[unshift 放回]
+    I -- 否 --> M([結束])
+
+    style D fill:#fff3e0,stroke:#ffb74d
+    style F fill:#fff3e0,stroke:#ffb74d
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>GAS 後端路由</h2>
+    <div class="mermaid">
+graph TD
+    A[doPost 收到 JSON] --> B[parseDecimal 正規化數字]
+    B --> C{fd.formType}
+    C -- production --> D[submitForm]
+    C -- intake --> E[submitIntake]
+    D --> F{fd.docType}
+    F -- 2.盤頭領料上機 --> G[weight 轉負數\n出庫]
+    F -- 其他 --> H[weight 正數\n入庫]
+    G & H --> I[(Data Sheet\nappendRow)]
+    E --> J{進料 sheet 存在?}
+    J -- 否 --> K[建立 進料 sheet\n加入標題列]
+    K --> L[(進料 Sheet\nappendRow)]
+    J -- 是 --> L
+
+    style I fill:#e6f4ea,stroke:#1e8e3e
+    style L fill:#fce8b2,stroke:#e65100
+    </div>
+  </div>
+
+  <div class="card notes">
+    <h3>重點說明</h3>
+    <ul>
+      <li><span class="tag tag-blue">離線優先</span> 送出前先確認網路，無網路直接存 localStorage，不會讓用戶感知失敗</li>
+      <li><span class="tag tag-orange">進料記錄</span> 是第 4 種單據別，和生產紀錄共用同一個表單，由 formType 區分寫入哪個工作表</li>
+      <li><span class="tag tag-green">parseDecimal</span> 在 GAS 端做數字正規化，處理越南裝置的逗號小數點（3.000,8 → 3000.8）</li>
+      <li>出庫（盤頭領料上機）重量自動轉負數，方便 Sheets 計算庫存差異</li>
+      <li>人員名單硬編碼在 HTML 內，整經 11 人 / 織布 25 人，依單據別切換</li>
+    </ul>
+  </div>
+
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { curve: 'basis' } });</script>
+</body>
+</html>
