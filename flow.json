@@ -1,0 +1,65 @@
+{
+  "app": "panhead-form",
+  "description": "盤頭生產紀錄與進料記錄表單，整經工段用",
+  "url": "https://stevetai0314-dot.github.io/panhead-form/",
+  "tech": {
+    "frontend": "Vanilla HTML/JS, GitHub Pages",
+    "backend": "Google Apps Script",
+    "storage": "Google Sheets + localStorage queue"
+  },
+  "document_types": [
+    {
+      "id": "1.整經盤頭生產",
+      "formType": "production",
+      "worker_list": "warping",
+      "fields": ["dept", "docType", "worker", "yarn", "warpCount", "bobbinNo", "weight", "length", "lot"],
+      "sheet": "Data",
+      "in_out": "入庫"
+    },
+    {
+      "id": "2.盤頭領料上機",
+      "formType": "production",
+      "worker_list": "weaving",
+      "fields": ["dept", "docType", "worker", "yarn", "warpCount", "bobbinNo", "weight", "machine"],
+      "sheet": "Data",
+      "in_out": "出庫",
+      "note": "weight 寫入負數"
+    },
+    {
+      "id": "3.機上盤頭退料",
+      "formType": "production",
+      "worker_list": "weaving",
+      "fields": ["dept", "docType", "worker", "yarn", "bobbinNo", "weight", "scale"],
+      "sheet": "Data",
+      "in_out": "入庫"
+    },
+    {
+      "id": "4.進料記錄",
+      "formType": "intake",
+      "worker_list": null,
+      "fields": ["dept", "docType", "spec", "intakeLot", "color", "boxes", "weight", "arrivalDate", "location"],
+      "sheet": "進料",
+      "note": "location: 非盤頭 / 盤頭上"
+    }
+  ],
+  "offline_queue": {
+    "key": "panhead_submit_queue",
+    "strategy": "shift-recurse",
+    "auto_flush_on": ["window.online", "window.onload"],
+    "badge_element": "queue-badge"
+  },
+  "gas": {
+    "routing": "fd.formType === 'intake' → submitIntake, else → submitForm",
+    "decimal_handling": "parseDecimal() normalizes comma separators (3.000,8 → 3000.8)",
+    "sheets": {
+      "Data": "生產紀錄（1/2/3 單據）",
+      "進料": "進料記錄（4 單據，自動建立）",
+      "Config": "人員名單與紗種下拉選單來源"
+    }
+  },
+  "languages": ["zh-TW", "vi"],
+  "worker_lists": {
+    "warping": 11,
+    "weaving": 25
+  }
+}
