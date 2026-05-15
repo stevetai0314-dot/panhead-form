@@ -21,7 +21,19 @@ function doPost(e) {
 
 function parseDecimal(val) {
   if (val === null || val === undefined || val === '') return 0;
-  return parseFloat(String(val).replace(',', '.')) || 0;
+  var s = String(val).trim();
+  var dotIdx = s.lastIndexOf('.');
+  var commaIdx = s.lastIndexOf(',');
+  if (dotIdx > -1 && commaIdx > -1) {
+    if (commaIdx > dotIdx) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (commaIdx > -1) {
+    s = s.replace(',', '.');
+  }
+  return parseFloat(s) || 0;
 }
 
 function getDropdowns() {
