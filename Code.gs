@@ -70,12 +70,13 @@ function submitIntake(fd) {
   var sheet = ss.getSheetByName('進料');
   if (!sheet) {
     sheet = ss.insertSheet('進料');
-    sheet.appendRow(['時間戳記', '規格', '批號顏色', '箱數', '重量KG', '進廠日期', '位置']);
+    sheet.appendRow(['時間戳記', '規格', '批號', '顏色', '箱數', '重量KG', '進廠日期', '位置']);
   }
   sheet.appendRow([
     new Date(),
     fd.spec,
-    fd.lotColor,
+    fd.intakeLot,
+    fd.color,
     Number(fd.boxes),
     Number(fd.weight),
     fd.arrivalDate,
